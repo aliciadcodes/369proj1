@@ -8,6 +8,15 @@
     <title>Speech color changer</title>
 
     <link rel="stylesheet" href="style.css" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Waveform Visualizer</title>
+    <style>
+        body { text-align: center; font-family: Arial, sans-serif; margin: 50px; }
+        canvas { border: 1px solid black; width: 100%; max-width: 600px; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+    </style>
   </head>
 
   <body>
@@ -19,5 +28,61 @@
     </div>
 
     <script src="script.js"></script>
+  <body>
+    <h1>Voice to Waveform</h1>
+    <button onclick="startRecording()">Start Recording</button>
+    <canvas id="waveform" width="600" height="200"></canvas>
+
+    <script>
+        let audioContext, analyser, microphone, dataArray, canvas, ctx;
+
+        function startRecording() {
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+                // Initialize AudioContext
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                microphone = audioContext.createMediaStreamSource(stream);
+                
+                // Connect microphone to analyser
+                microphone.connect(analyser);
+                analyser.fftSize = 2048; // Frequency resolution
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+                
+                // Get canvas and context
+                canvas = document.getElementById("waveform");
+                ctx = canvas.getContext("2d");
+                
+                drawWaveform();
+            }).catch(error => {
+                alert("Microphone access denied!");
+                console.error(error);
+            });
+        }
+
+        function drawWaveform() {
+            requestAnimationFrame(drawWaveform);
+            analyser.getByteTimeDomainData(dataArray);
+
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = "lime";
+            ctx.beginPath();
+
+            let sliceWidth = canvas.width / dataArray.length;
+            let x = 0;
+
+            for (let i = 0; i < dataArray.length; i++) {
+                let y = (dataArray[i] / 255) * canvas.height;
+
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+
+                x += sliceWidth;
+            }
+
+            ctx.stroke();
+        }
+    </script>
   </body>
 </html>
